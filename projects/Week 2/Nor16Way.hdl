@@ -1,0 +1,24 @@
+CHIP Nor16Way {
+    IN in[16];   
+    OUT out;    
+    PARTS:
+    Or(a=in[0], b=in[1], out=nor1);
+    Or(a=nor1, b=in[2], out=nor2);
+    Or(a=nor2, b=in[3], out=nor3);
+    Or(a=nor3, b=in[4], out=nor4);
+    Or(a=nor4, b=in[5], out=nor5);
+    Or(a=nor5, b=in[6], out=nor6);
+    Or(a=nor6, b=in[7], out=nor7);
+    Or(a=nor7, b=in[8], out=nor8);
+    Or(a=nor8, b=in[9], out=nor9);
+    Or(a=nor9, b=in[10], out=nor10);
+    Or(a=nor10, b=in[11], out=nor11);
+    Or(a=nor11, b=in[12], out=nor12);
+    Or(a=nor12, b=in[13], out=nor13);
+    Or(a=nor13, b=in[14], out=nor14);
+    Or(a=nor14, b=in[15], out=nor15);
+    Not(in=nor15, out=out);
+
+
+
+}

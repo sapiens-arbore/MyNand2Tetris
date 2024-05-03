@@ -1,0 +1,91 @@
+CHIP CPU {
+
+    IN  inM[16],         // M value input  (M = contents of RAM[A])
+        instruction[16], // Instruction for execution
+        reset;           // Signals whether to restart the current
+                         // program (reset==1) or continue executing
+                         // the current program (reset==0).
+
+    OUT outM[16],        // M value output
+        writeM,          // Write to M? 
+        addressM[15],    // Address in data memory (of M)
+        pc[15];          // Address of next instruction
+
+    PARTS:
+
+    //A instruction or ALU output
+    Mux16(a=instruction, b=outALU, sel=instruction[15], out=toAReg);
+
+    //Where to write if it is C instruction!
+    And(a=instruction[3],b=instruction[15],out=writeM);
+	And(a=instruction[4],b=instruction[15],out=writeD);
+	And(a=instruction[5],b=instruction[15],out=writeAsub);
+	
+    //If A instruction, is [15]=0? If yes is 1
+    Not(in = instruction[15], out = AIs0);
+    //If either is A instruction or it is C instruction but the bit [5] is 1, load to A register
+    Or(a = writeAsub, b = AIs0, out = writeA);
+    //A register
+    ARegister(in = toAReg, load=writeA, out = outAReg, out[0..14] = addressM);
+
+    //D register
+    DRegister(in = outALU, load = writeD, out = outDReg);
+
+    //A or M for ALU
+    Mux16(a=outAReg, b=inM, sel=instruction[12], out=inMtoALU);
+
+    ALU(x = outDReg, y = inMtoALU, zx = instruction[11], nx = instruction[10], zy = instruction[9], ny = instruction[8], f = instruction[7], no = instruction[6], out = outALU, out = outM, zr = zr, ng = ng);
+
+    //Take care of jump situations
+    //ps meaning reverse of ng which is positive. 0 when <0, 1 when >0
+    Not(in = ng, out = ps1);
+    //can be positive only if it is not zero, otherwise counts zero as positive and jumps if JGT, compares ps1 and notzero(cannot compare with IsNotZero, because this compares if it is like said in instruction);
+    Not(in = zr, out = nzr);
+    And(a = nzr, b = ps1, out = ps);
+
+    //When J1 is 0
+    
+    //>0
+    And(a = instruction[0], b = ps, out = isGreaterZero);
+    //=0
+    And(a = instruction[1], b = zr, out = isEqualZero);
+    //>=0
+    Or(a = isGreaterZero, b = isEqualZero, out = isGreaterEqualZero);
+
+    //When J1 is 1
+
+    //<0
+    Nor(a = instruction[0], b = ps, out = isLessZero1);
+    And(a = isLessZero1, b = nzr, out = isLessZero);
+    //!=0
+    Nor(a = instruction[1], b = zr, out = isNotZero1);
+    And(a = isNotZero1, b = instruction[0], out = isNotZero);
+    //<=0
+    Or(a = isEqualZero, b = isLessZero, out = isLessEqualZero);
+
+
+
+
+    //All conditions as planned for J1=0
+    Or(a = isGreaterZero, b =isEqualZero, out = tempJ10);
+    //changed!
+    Or(a = tempJ10, b = isGreaterEqualZero, out = CMetJ10);
+    //All conditions as planned for J1=1
+    Or(a = isLessZero, b =isNotZero, out = tempJ11);
+    //changed!
+    Or(a = tempJ11, b = isLessEqualZero, out = CMetJ11);
+    //Mux chooses which one output to trust, based on J1 bit
+    Mux(a = CMetJ10, b = CMetJ11, sel = instruction[2], out = loadPCt);
+    Mux(a = false, b = loadPCt, sel = instruction[15], out = loadPC1);
+
+    //unconditional jump
+    And(a = instruction[0], b = instruction[1], out = inst12);
+    And(a = instruction[2], b = inst12, out = unconditional);
+    Or(a = loadPC1, b = unconditional, out = loadPC2);
+    And(a = loadPC2, b = instruction[15], out = loadPC);
+    
+    PC(in = outAReg, inc = true, load = loadPC, reset = reset, out[0..14] = pc);
+
+
+    
+}

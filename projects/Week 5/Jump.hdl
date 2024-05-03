@@ -1,0 +1,42 @@
+CHIP Jump {
+    IN J1REVERSE, J2ZERO, J3NEG, ng, zr;
+    OUT load;
+
+
+    PARTS:
+    //Take care of jump situations
+    //ps meaning reverse of ng which is positive. 0 when <0, 1 when >0
+    Not(in = ng, out = ps);
+
+    //When J1 is 0
+    
+    //>0
+    And(a = instruction[15], b = ps, out = isGreaterZero);
+    //=0
+    And(a = instruction[14], b = zr, out = isEqualZero);
+    //>=0
+    Or(a = isGreaterZero, b = isEqualZero, out = isGreaterEqualZero);
+
+    //When J1 is 1
+
+    //<0
+    Not(in = isGreaterZero, out = isLessZero);
+    //!=0
+    Not(in = isEqualZero, out = isNotZero);
+    //<=0
+    And(a = isEqualZero, b = isLessZero, out = isLessEqualZero);
+
+    //All conditions as planned for J1=0
+    And(a = isGreaterZero, b =isEqualZero, out = tempJ10);
+    And(a = tempJ10, b = isGreaterEqualZero, out = ConditionsMetJ10);
+    //All conditions as planned for J1=1
+    And(a = isLessZero, b =isNotZero, out = tempJ11);
+    And(a = tempJ11, b = isLessEqualZero, out = ConditionsMetJ11);
+    //Mux chooses which one output to trust, based on J1 bit
+    Mux(a = ConditionsMetJ10, b = ConditionsMetJ11, sel = instruction[13], out = load);
+    
+
+
+
+
+}

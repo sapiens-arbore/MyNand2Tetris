@@ -1,0 +1,40 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/03/a/RAM8.hdl
+/**
+ * Memory of eight 16-bit registers.
+ * If load is asserted, the value of the register selected by
+ * address is set to in; Otherwise, the value does not change.
+ * The value of the selected register is emitted by out.
+ */
+CHIP RAM8 {
+    IN in[16], load, address[3];
+    OUT out[16];
+
+    PARTS:
+    //Writing to register
+    DMux(in=load, sel=address[2], a=b2it0, b=b2it1);
+    DMux(in=b2it0, sel=address[1], a=b2it01it0, b=b2it01it1);
+    DMux(in=b2it1, sel=address[1], a=b2it11it0, b=b2it11it1);
+    DMux(in=b2it01it0, sel=address[0], a=Reg0, b=Reg1);
+    DMux(in=b2it01it1, sel=address[0], a=Reg2, b=Reg3);
+    DMux(in=b2it11it0, sel=address[0], a=Reg4, b=Reg5);
+    DMux(in=b2it11it1, sel=address[0], a=Reg6, b=Reg7);
+    Register(in=in[0..15], load=Reg0, out=Reg0out);
+    Register(in=in[0..15], load=Reg1, out=Reg1out);
+    Register(in=in[0..15], load=Reg2, out=Reg2out);
+    Register(in=in[0..15], load=Reg3, out=Reg3out);
+    Register(in=in[0..15], load=Reg4, out=Reg4out);
+    Register(in=in[0..15], load=Reg5, out=Reg5out);
+    Register(in=in[0..15], load=Reg6, out=Reg6out);
+    Register(in=in[0..15], load=Reg7, out=Reg7out);
+    //Reading from register
+    Mux16(a[0..15]=Reg0out, b[0..15]=Reg1out, sel=address[0], out[0..15]=xb2it0b1it0);
+    Mux16(a[0..15]=Reg2out, b[0..15]=Reg3out, sel=address[0], out[0..15]=xb2it0b1it1);
+    Mux16(a[0..15]=Reg4out, b[0..15]=Reg5out, sel=address[0], out[0..15]=xb2it1b1it0);
+    Mux16(a[0..15]=Reg6out, b[0..15]=Reg7out, sel=address[0], out[0..15]=xb2it1b1it1);
+    Mux16(a[0..15]=xb2it0b1it0, b[0..15]=xb2it0b1it1, sel=address[1], out[0..15]=xb2it0);
+    Mux16(a[0..15]=xb2it1b1it0, b[0..15]=xb2it1b1it1, sel=address[1], out[0..15]=xb2it1);
+    Mux16(a[0..15]=xb2it0, b[0..15]=xb2it1, sel=address[2], out[0..15]=out);
+}
